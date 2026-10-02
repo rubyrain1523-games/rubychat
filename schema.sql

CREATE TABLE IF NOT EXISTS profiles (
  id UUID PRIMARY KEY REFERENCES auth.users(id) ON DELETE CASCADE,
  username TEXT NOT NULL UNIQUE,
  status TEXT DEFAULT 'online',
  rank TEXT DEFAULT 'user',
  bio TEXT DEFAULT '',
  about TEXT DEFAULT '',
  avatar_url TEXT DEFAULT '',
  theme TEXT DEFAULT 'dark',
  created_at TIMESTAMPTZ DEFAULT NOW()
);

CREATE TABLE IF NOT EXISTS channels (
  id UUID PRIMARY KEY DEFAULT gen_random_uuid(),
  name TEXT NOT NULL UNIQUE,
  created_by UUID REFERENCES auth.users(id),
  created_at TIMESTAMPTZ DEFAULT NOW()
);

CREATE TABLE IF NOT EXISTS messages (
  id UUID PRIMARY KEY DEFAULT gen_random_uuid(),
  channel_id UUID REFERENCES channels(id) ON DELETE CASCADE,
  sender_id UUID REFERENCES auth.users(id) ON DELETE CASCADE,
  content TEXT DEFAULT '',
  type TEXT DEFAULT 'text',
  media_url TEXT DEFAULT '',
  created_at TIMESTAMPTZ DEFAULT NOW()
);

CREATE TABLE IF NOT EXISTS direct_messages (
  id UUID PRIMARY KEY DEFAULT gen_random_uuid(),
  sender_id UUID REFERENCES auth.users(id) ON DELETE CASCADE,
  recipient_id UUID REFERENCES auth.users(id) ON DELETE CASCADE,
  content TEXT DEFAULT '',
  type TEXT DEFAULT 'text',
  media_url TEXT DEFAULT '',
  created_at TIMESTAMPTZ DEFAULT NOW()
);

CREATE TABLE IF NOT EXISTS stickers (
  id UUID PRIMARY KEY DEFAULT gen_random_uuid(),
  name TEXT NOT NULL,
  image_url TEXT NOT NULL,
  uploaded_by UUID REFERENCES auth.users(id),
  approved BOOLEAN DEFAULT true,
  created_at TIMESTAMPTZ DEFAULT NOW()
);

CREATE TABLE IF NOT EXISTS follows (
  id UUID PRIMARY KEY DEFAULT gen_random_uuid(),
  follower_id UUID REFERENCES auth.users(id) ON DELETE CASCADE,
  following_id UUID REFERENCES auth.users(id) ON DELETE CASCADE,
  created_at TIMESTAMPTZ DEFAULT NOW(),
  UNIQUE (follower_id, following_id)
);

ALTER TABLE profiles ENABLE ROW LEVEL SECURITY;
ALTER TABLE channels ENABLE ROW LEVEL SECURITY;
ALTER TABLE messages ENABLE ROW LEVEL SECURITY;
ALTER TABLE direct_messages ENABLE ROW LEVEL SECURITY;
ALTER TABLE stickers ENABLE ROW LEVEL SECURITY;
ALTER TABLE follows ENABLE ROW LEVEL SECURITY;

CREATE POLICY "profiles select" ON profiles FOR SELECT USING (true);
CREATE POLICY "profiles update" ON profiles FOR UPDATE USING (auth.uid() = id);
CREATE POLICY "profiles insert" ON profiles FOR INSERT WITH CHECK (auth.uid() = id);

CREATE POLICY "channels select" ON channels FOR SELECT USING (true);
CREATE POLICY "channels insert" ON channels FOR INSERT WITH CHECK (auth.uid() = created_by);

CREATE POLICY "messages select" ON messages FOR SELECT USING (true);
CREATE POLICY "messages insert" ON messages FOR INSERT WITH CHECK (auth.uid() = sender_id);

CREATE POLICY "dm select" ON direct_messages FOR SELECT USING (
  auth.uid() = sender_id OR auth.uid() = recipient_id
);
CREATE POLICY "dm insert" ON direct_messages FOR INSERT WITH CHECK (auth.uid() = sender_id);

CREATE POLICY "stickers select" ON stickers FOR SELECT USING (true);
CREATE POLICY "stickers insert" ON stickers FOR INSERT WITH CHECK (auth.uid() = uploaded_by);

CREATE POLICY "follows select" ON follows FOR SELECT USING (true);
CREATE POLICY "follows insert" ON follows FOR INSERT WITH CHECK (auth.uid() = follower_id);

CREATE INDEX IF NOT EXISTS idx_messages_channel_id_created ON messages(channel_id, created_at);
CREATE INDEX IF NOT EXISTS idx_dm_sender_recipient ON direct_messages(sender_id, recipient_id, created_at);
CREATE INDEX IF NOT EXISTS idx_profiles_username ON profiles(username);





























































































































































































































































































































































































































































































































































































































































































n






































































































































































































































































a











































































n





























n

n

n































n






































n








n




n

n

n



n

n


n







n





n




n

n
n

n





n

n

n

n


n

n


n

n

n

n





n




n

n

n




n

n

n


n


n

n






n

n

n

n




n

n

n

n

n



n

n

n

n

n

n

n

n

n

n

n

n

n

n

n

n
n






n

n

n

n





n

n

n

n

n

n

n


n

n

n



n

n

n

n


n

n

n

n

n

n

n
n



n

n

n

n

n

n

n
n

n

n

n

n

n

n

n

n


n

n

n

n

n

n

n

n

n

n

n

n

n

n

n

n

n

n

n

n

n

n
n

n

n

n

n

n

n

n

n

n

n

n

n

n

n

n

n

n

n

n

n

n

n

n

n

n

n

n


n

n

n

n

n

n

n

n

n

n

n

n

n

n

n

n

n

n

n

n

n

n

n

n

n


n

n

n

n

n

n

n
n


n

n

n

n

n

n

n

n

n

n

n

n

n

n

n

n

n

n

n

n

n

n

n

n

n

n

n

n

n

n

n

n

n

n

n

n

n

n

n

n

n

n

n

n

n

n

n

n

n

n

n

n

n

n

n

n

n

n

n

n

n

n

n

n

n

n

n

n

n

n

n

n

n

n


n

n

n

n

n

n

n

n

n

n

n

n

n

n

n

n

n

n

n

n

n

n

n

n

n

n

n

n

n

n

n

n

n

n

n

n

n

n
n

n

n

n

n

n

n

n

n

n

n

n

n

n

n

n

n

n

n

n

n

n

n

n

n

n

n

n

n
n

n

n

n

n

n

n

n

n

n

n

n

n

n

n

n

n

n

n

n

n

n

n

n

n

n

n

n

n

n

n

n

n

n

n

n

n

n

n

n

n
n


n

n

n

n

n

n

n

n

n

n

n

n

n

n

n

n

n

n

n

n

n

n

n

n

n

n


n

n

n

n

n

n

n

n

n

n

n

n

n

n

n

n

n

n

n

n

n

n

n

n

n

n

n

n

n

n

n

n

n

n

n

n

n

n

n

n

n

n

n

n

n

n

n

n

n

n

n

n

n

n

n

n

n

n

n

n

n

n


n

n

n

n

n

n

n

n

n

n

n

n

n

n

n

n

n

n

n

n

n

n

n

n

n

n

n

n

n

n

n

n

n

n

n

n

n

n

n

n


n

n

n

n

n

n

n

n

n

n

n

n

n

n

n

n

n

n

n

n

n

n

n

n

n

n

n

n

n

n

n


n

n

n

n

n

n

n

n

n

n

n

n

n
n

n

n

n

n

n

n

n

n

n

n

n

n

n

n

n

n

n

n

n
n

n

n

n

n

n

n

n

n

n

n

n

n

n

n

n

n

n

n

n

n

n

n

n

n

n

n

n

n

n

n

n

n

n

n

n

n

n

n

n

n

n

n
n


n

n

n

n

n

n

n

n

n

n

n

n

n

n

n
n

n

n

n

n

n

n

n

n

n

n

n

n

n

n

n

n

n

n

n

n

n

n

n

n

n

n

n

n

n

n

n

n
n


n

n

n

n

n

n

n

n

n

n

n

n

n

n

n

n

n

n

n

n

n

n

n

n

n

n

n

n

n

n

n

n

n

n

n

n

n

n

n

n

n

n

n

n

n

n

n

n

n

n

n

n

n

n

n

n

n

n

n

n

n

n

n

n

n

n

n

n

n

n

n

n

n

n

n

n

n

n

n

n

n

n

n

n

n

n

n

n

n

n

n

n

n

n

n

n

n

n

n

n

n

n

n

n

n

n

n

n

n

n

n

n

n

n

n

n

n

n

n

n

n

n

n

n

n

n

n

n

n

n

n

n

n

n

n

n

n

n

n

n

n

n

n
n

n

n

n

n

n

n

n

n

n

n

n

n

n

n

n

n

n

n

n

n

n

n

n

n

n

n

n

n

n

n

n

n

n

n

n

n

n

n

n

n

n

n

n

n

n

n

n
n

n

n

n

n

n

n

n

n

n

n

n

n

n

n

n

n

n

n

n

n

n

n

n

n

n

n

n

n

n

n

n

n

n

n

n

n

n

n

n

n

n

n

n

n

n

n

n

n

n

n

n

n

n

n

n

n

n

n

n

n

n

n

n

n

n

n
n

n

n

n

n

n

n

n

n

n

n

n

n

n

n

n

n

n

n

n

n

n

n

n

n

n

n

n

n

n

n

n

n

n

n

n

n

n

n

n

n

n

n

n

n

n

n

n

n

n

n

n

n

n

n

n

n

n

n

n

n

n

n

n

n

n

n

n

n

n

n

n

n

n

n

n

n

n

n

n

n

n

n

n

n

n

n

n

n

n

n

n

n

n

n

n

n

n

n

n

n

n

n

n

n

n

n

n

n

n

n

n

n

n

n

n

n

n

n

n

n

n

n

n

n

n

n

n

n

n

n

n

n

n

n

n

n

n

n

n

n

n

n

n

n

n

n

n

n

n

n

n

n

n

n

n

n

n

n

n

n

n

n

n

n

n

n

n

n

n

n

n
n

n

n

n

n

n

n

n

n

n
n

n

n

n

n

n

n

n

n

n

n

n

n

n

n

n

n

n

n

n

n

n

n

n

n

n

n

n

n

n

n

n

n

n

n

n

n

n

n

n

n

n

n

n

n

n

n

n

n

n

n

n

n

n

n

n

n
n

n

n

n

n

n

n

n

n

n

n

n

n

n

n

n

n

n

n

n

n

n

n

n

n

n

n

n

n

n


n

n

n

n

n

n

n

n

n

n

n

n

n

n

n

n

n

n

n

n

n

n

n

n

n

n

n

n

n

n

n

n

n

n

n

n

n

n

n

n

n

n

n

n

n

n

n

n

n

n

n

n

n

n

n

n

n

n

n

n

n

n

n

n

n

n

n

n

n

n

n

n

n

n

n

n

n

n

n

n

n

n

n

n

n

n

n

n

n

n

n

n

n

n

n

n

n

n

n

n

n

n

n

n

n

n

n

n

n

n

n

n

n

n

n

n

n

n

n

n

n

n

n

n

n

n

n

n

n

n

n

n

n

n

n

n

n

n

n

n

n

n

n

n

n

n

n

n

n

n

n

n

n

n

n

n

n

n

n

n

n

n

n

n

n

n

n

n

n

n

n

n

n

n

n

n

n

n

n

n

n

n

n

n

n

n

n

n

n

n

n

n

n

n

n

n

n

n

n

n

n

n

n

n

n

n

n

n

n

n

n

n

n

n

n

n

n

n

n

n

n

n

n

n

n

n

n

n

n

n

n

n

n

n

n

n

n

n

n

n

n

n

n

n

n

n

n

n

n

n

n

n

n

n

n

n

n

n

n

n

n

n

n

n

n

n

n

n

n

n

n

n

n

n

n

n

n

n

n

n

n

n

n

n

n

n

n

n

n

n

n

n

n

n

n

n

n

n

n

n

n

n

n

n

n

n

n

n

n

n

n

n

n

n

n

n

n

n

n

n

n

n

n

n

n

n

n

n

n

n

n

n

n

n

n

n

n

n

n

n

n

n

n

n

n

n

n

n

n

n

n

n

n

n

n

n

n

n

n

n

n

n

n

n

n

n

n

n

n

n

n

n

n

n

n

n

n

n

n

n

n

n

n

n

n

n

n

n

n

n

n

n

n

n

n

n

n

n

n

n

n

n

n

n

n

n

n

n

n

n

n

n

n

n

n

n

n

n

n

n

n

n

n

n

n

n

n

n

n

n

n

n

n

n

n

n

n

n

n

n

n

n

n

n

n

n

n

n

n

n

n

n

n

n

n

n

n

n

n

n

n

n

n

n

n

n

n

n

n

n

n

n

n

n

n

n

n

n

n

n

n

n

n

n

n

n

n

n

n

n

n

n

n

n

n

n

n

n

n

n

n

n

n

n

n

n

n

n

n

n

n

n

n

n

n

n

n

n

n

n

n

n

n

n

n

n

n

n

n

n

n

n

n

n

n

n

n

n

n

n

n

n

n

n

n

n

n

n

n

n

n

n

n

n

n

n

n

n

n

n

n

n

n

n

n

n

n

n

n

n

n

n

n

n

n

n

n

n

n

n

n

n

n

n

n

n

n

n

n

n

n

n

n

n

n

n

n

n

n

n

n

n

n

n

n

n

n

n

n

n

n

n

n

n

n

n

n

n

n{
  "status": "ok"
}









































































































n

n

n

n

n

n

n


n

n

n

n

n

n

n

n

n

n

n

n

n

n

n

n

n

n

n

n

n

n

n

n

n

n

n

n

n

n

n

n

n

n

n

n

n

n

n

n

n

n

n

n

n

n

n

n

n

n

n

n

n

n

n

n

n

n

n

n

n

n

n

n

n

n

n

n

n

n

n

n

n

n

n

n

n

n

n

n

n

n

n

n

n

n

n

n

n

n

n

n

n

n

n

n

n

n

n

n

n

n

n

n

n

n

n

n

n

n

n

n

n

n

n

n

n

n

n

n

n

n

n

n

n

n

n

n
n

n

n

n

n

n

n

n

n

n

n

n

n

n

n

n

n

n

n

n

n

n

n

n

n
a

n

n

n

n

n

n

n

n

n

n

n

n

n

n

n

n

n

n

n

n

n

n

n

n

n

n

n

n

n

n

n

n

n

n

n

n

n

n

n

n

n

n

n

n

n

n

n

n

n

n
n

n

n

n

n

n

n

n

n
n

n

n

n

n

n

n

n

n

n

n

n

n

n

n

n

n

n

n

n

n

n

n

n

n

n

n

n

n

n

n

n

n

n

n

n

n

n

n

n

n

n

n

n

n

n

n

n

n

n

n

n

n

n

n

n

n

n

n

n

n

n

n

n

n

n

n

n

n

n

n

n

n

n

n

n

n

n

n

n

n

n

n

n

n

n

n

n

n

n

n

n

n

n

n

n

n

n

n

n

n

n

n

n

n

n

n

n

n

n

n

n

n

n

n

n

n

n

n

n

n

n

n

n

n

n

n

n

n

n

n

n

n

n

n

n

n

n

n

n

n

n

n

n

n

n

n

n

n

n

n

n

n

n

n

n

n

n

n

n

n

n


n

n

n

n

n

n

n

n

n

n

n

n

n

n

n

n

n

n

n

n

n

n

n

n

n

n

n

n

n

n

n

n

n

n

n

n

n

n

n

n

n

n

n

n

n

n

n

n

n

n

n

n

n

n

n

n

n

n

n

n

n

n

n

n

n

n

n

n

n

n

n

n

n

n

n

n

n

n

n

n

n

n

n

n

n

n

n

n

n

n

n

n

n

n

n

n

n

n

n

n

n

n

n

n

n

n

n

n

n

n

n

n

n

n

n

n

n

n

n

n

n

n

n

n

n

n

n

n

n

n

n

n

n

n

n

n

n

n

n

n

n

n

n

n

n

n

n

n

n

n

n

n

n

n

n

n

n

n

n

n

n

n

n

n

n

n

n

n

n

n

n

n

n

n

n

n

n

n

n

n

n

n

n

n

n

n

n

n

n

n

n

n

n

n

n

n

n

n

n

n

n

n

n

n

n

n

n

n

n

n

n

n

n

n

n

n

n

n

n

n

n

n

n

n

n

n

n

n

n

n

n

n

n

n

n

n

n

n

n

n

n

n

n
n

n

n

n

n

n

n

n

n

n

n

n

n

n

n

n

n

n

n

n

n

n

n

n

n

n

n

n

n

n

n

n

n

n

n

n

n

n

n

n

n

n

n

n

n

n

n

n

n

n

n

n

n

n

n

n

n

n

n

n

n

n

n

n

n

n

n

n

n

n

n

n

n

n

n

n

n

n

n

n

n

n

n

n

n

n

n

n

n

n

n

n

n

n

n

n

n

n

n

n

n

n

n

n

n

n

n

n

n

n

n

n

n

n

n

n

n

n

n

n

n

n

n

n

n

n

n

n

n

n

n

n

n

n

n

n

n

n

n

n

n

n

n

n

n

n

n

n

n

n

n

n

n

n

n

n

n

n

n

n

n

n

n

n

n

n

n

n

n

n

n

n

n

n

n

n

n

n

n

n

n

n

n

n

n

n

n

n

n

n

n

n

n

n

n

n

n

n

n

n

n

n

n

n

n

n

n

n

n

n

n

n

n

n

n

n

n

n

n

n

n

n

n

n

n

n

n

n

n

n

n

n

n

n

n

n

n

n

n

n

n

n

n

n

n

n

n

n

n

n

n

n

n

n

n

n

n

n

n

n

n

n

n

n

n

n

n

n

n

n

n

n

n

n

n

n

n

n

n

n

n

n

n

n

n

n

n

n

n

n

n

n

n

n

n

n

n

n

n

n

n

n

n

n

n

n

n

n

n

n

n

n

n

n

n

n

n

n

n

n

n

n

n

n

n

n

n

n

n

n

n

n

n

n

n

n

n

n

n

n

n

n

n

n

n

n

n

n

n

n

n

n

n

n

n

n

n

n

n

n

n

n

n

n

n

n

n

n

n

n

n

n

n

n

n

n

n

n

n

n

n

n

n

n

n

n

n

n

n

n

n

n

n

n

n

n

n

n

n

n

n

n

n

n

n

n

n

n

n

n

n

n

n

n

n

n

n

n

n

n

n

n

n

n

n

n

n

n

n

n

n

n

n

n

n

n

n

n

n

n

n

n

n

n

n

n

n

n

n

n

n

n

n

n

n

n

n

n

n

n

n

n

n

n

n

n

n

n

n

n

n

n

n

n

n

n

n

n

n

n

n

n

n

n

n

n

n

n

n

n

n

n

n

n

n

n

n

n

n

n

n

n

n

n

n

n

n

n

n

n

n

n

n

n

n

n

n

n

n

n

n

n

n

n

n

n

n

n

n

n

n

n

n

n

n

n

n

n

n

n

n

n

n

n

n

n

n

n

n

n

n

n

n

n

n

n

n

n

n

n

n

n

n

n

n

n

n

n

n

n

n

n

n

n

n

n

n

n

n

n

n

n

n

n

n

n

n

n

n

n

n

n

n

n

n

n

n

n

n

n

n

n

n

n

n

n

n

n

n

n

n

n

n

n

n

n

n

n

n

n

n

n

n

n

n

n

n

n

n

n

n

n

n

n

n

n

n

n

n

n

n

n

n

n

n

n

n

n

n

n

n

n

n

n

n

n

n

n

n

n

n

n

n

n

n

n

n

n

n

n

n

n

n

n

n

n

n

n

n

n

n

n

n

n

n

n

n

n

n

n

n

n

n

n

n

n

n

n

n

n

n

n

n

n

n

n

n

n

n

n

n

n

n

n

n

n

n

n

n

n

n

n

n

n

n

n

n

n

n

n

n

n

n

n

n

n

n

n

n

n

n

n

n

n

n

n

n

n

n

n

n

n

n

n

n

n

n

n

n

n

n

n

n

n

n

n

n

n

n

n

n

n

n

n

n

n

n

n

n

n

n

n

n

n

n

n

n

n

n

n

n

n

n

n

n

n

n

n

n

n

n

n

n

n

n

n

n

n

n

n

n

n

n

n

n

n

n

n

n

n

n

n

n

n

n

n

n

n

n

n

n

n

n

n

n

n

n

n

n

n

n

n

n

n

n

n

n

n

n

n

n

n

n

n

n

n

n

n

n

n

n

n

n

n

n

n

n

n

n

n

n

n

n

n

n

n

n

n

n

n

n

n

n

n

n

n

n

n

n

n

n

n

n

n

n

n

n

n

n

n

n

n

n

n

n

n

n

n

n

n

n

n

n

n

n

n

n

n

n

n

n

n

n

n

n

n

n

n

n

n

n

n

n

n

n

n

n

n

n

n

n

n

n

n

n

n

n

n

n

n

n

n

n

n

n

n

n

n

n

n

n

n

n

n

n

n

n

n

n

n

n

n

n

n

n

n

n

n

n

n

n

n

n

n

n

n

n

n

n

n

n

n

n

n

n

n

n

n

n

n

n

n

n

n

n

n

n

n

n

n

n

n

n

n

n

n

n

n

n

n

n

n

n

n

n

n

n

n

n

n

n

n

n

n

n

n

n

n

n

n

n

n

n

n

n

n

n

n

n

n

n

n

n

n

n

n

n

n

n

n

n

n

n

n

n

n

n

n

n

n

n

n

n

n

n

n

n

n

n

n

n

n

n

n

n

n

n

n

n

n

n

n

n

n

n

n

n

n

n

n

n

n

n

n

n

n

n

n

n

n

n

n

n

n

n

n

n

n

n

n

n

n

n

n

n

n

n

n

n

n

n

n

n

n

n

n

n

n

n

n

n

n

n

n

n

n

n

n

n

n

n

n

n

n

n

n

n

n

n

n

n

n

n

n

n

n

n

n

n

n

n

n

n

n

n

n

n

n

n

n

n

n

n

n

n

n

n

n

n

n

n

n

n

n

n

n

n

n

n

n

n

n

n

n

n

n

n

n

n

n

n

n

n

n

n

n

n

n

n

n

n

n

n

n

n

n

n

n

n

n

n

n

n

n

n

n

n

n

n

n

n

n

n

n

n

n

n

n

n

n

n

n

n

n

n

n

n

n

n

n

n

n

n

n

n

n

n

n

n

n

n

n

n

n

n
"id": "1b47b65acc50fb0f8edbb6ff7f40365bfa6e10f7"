@@ -1,0 +1,972 @@
+// RubyChat app
+const SUPABASE_URL = 'https://yxngrbcgpsdtvsjlxrgp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Qbmo7fKiSyTJfRoMmcXX-A_xkmgmNj5';
+const GIPHY_API_KEY = 'YOUR_GIPHY_KEY';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const RANKS = ['user', 'mod', 'admin', 'super_admin', 'co_owner', 'owner'];
+const RANK_LABELS = {
+  user: 'User',
+  mod: 'Mod',
+  admin: 'Admin',
+  super_admin: 'Super Admin',
+  co_owner: 'Co-Owner',
+  owner: 'Owner'
+};
+
+const state = {
+  user: null,
+  profile: null,
+  currentChannel: null,
+  dmTarget: null,
+  theme: localStorage.getItem('rubychat-theme') || 'dark'
+};
+
+function setError(message) {
+  const box = document.getElementById('auth-error');
+  if (!box) return;
+  box.textContent = message;
+  box.classList.toggle('hidden', !message);
+}
+
+function setTheme(theme) {
+  document.body.className = theme;
+  state.theme = theme;
+  localStorage.setItem('rubychat-theme', theme);
+  const sel = document.getElementById('theme-select');
+  if (sel) sel.value = theme;
+}
+
+function rankOrder(rank) {
+  return RANKS.indexOf(rank || 'user');
+}
+
+function hasPermission(rank, minimum) {
+  return rankOrder(rank) >= rankOrder(minimum);
+}
+
+function formatRank(rank) {
+  return RANK_LABELS[rank] || 'User';
+}
+
+function showLogin() {
+  document.getElementById('login-form').classList.remove('hidden');
+  document.getElementById('signup-form').classList.add('hidden');
+  setError('');
+}
+
+function showSignup() {
+  document.getElementById('login-form').classList.add('hidden');
+  document.getElementById('signup-form').classList.remove('hidden');
+  setError('');
+}
+
+function openProfileModal() {
+  const profile = state.profile || {};
+  document.getElementById('profile-username').value = profile.username || '';
+  document.getElementById('profile-status').value = profile.status || 'online';
+  document.getElementById('profile-avatar').value = profile.avatar_url || '';
+  document.getElementById('profile-bio').value = profile.bio || '';
+  document.getElementById('profile-about').value = profile.about || '';
+  document.getElementById('profile-modal').classList.remove('hidden');
+}
+
+function closeProfileModal() {
+  document.getElementById('profile-modal').classList.add('hidden');
+}
+
+function openGifModal() {
+  document.getElementById('gif-modal').classList.remove('hidden');
+}
+
+function closeGifModal() {
+  document.getElementById('gif-modal').classList.add('hidden');
+}
+
+function openStickerModal() {
+  document.getElementById('sticker-modal').classList.remove('hidden');
+  loadStickers();
+}
+
+function closeStickerModal() {
+  document.getElementById('sticker-modal').classList.add('hidden');
+}
+
+function openStickerUploadModal() {
+  document.getElementById('sticker-upload-modal').classList.remove('hidden');
+}
+
+function closeStickerUploadModal() {
+  document.getElementById('sticker-upload-modal').classList.add('hidden');
+}
+
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!email || !password) {
+    setError('Please enter your email and password.');
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    state.user = data.user;
+    await loadProfile();
+    showApp();
+  } catch (err) {
+    setError(err.message || 'Login failed.');
+  }
+}
+
+async function signup() {
+  const username = document.getElementById('signup-username').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value.trim();
+
+  if (!username || !email || !password) {
+    setError('Please fill in all fields.');
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+
+    const { error: profileError } = await supabase.from('profiles').insert([
+      {
+        id: data.user.id,
+        username,
+        status: 'online',
+        rank: 'user',
+        bio: 'Hello world!',
+        about: 'New to RubyChat.',
+        avatar_url: '',
+        theme: 'dark'
+      }
+    ]);
+
+    if (profileError) throw profileError;
+
+    showLogin();
+    alert('Account created. Please sign in.');
+  } catch (err) {
+    setError(err.message || 'Signup failed.');
+  }
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  state.user = null;
+  state.profile = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app-screen').classList.add('hidden');
+}
+
+async function loadProfile() {
+  if (!state.user) return;
+
+  let { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', state.user.id)
+    .single();
+
+  if (error) {
+    const { data: created, error: createErr } = await supabase.from('profiles').insert([
+      {
+        id: state.user.id,
+        username: (state.user.email || 'user').split('@')[0],
+        status: 'online',
+        rank: 'user',
+        bio: 'New to RubyChat.',
+        about: 'Tell people about yourself.',
+        avatar_url: '',
+        theme: state.theme
+      }
+    ]).select().single();
+
+    if (createErr) {
+      console.error(createErr);
+      return;
+    }
+    data = created;
+  }
+
+  state.profile = data;
+  document.getElementById('sidebar-username').textContent = data.username || 'User';
+  document.getElementById('sidebar-status').textContent = data.status || 'online';
+  document.getElementById('sidebar-avatar').src = data.avatar_url || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(data.username || state.user.email)}`;
+  document.getElementById('my-rank').textContent = formatRank(data.rank || 'user');
+  setTheme(data.theme || 'dark');
+  const themeSelect = document.getElementById('theme-select');
+  if (themeSelect) themeSelect.value = state.theme;
+}
+
+async function loadChannels() {
+  const { data, error } = await supabase
+    .from('channels')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const list = document.getElementById('channel-list');
+  list.innerHTML = '';
+
+  data.forEach((channel) => {
+    const button = document.createElement('button');
+    button.className = 'channel-item' + (state.currentChannel && state.currentChannel.id === channel.id ? ' active' : '');
+    button.textContent = '#' + channel.name;
+    button.onclick = () => selectChannel(channel);
+    list.appendChild(button);
+  });
+
+  if (!state.currentChannel && data.length) {
+    selectChannel(data[0]);
+  }
+}
+
+async function loadPeople() {
+  if (!state.user) return;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .neq('id', state.user.id)
+    .order('username', { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const list = document.getElementById('people-list');
+  list.innerHTML = '';
+
+  for (const person of data) {
+    const isFollowing = await isFollowing(person.id);
+
+    const row = document.createElement('button');
+    row.className = 'user-item';
+    row.innerHTML = `
+      <div class="user-line">
+        <div class="user-block">
+          <img src="${person.avatar_url || 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + encodeURIComponent(person.username)}" class="avatar small" alt="avatar" />
+          <div class="user-meta">
+            <span>${person.username}</span>
+            <small style="color:var(--muted);">${formatRank(person.rank || 'user')}</small>
+          </div>
+        </div>
+        <span class="tiny-flag">${isFollowing ? 'Following' : 'Follow'}</span>
+      </div>
+    `;
+    row.onclick = (event) => {
+      if (event.target.closest('.tiny-flag')) {
+        toggleFollow(person.id, !isFollowing);
+        return;
+      }
+      startDM(person);
+    };
+    list.appendChild(row);
+  }
+}
+
+async function isFollowing(targetId) {
+  if (!state.user || !targetId) return false;
+  const { data, error } = await supabase
+    .from('follows')
+    .select('id')
+    .eq('follower_id', state.user.id)
+    .eq('following_id', targetId)
+    .limit(1);
+
+  if (error) {
+    console.error(error);
+    return false;
+  }
+
+  return !!(data && data.length);
+}
+
+async function toggleFollow(targetId, follow) {
+  if (!state.user) return;
+
+  if (follow) {
+    const { error } = await supabase.from('follows').insert([{ follower_id: state.user.id, following_id: targetId }]);
+    if (error) {
+      console.error(error);
+      alert('Unable to follow this user.');
+      return;
+    }
+  } else {
+    const { error } = await supabase
+      .from('follows')
+      .delete()
+      .eq('follower_id', state.user.id)
+      .eq('following_id', targetId);
+
+    if (error) {
+      console.error(error);
+      alert('Unable to unfollow this user.');
+      return;
+    }
+  }
+
+  await loadPeople();
+}
+
+function selectChannel(channel) {
+  state.currentChannel = channel;
+  state.dmTarget = null;
+  document.getElementById('current-channel-name').textContent = '#' + channel.name;
+  document.getElementById('composer-input').placeholder = 'Message #' + channel.name;
+  loadMessages();
+  loadChannels();
+}
+
+function startDM(person) {
+  state.dmTarget = person;
+  state.currentChannel = null;
+  document.getElementById('current-channel-name').textContent = '@' + person.username;
+  document.getElementById('composer-input').placeholder = 'Message @' + person.username;
+  loadDMMessages(person.id);
+}
+
+async function loadMessages() {
+  if (!state.currentChannel) return;
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*, profiles:id, username, avatar_url, rank')
+    .eq('channel_id', state.currentChannel.id)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  renderMessages(data || []);
+}
+
+async function loadDMMessages(otherUserId) {
+  const { data, error } = await supabase.from('direct_messages').select('*');
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const filtered = (data || []).filter((msg) => {
+    const a = msg.sender_id === state.user.id && msg.recipient_id === otherUserId;
+    const b = msg.sender_id === otherUserId && msg.recipient_id === state.user.id;
+    return a || b;
+  });
+
+  const rows = filtered.map((msg) => ({
+    ...msg,
+    profiles: {
+      username: msg.sender_id === state.user.id ? state.profile.username : state.dmTarget.username,
+      avatar_url: msg.sender_id === state.user.id ? state.profile.avatar_url : state.dmTarget.avatar_url
+    }
+  }));
+
+  renderMessages(rows);
+}
+
+function renderMessages(rows) {
+  const container = document.getElementById('messages');
+  container.innerHTML = '';
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="message"><div class="message-meta">System</div><div class="message-content">No messages yet.</div></div>';
+    return;
+  }
+
+  rows.forEach((msg) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'message ' + (msg.sender_id === state.user.id ? 'self' : '');
+
+    const meta = document.createElement('div');
+    meta.className = 'message-meta';
+    const senderName = msg.profiles?.username || 'Unknown';
+    meta.textContent = senderName + ' • ' + new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+
+    if (msg.type === 'gif' || msg.type === 'sticker') {
+      const img = document.createElement('img');
+      img.src = msg.media_url || '';
+      img.alt = msg.type;
+      content.appendChild(img);
+    } else {
+      content.textContent = msg.content || '';
+    }
+
+    wrapper.appendChild(meta);
+    wrapper.appendChild(content);
+    container.appendChild(wrapper);
+  });
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendTextMessage() {
+  const input = document.getElementById('composer-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  try {
+    if (state.currentChannel) {
+      const { error } = await supabase.from('messages').insert([
+        {
+          channel_id: state.currentChannel.id,
+          sender_id: state.user.id,
+          content: text,
+          type: 'text'
+        }
+      ]);
+      if (error) throw error;
+      await loadMessages();
+    } else if (state.dmTarget) {
+      const { error } = await supabase.from('direct_messages').insert([
+        {
+          sender_id: state.user.id,
+          recipient_id: state.dmTarget.id,
+          content: text,
+          type: 'text'
+        }
+      ]);
+      if (error) throw error;
+      await loadDMMessages(state.dmTarget.id);
+    }
+
+    input.value = '';
+
+    if (text.toLowerCase().includes('@rain.ai')) {
+      await sendRainReply(text);
+    }
+  } catch (err) {
+    alert(err.message || 'Unable to send message.');
+  }
+}
+
+async function sendRainReply(text) {
+  const cleaned = text.replace(/@rain\.ai/gi, '').trim();
+  const msg = cleaned ? `Rain.ai says: "${cleaned.length > 100 ? cleaned.slice(0, 100) + '...' : cleaned}" I can help with chats, code, ideas, and moderation.` : 'Rain.ai is online and ready to help.';
+
+  if (state.currentChannel) {
+    await supabase.from('messages').insert([
+      {
+        channel_id: state.currentChannel.id,
+        sender_id: state.user.id,
+        content: msg,
+        type: 'text'
+      }
+    ]);
+    await loadMessages();
+  } else if (state.dmTarget) {
+    await supabase.from('direct_messages').insert([
+      {
+        sender_id: state.user.id,
+        recipient_id: state.dmTarget.id,
+        content: msg,
+        type: 'text'
+      }
+    ]);
+    await loadDMMessages(state.dmTarget.id);
+  }
+}
+
+async function searchGifs() {
+  const term = document.getElementById('gif-search').value.trim();
+  const list = document.getElementById('gif-results');
+
+  if (!term) {
+    list.innerHTML = '<div class="message"><div class="message-meta">System</div><div class="message-content">Enter a search term.</div></div>';
+    return;
+  }
+
+  if (GIPHY_API_KEY === 'YOUR_GIPHY_KEY') {
+    list.innerHTML = '<div class="message"><div class="message-meta">System</div><div class="message-content">Add a real Giphy key in app.js to enable GIF search.</div></div>';
+    return;
+  }
+
+  try {
+    const response = await fetch(`https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(term)}&limit=12&api_key=${GIPHY_API_KEY}`);
+    const json = await response.json();
+    const items = json.data || [];
+    list.innerHTML = '';
+
+    if (!items.length) {
+      list.innerHTML = '<div class="message"><div class="message-meta">System</div><div class="message-content">No GIFs found.</div></div>';
+      return;
+    }
+
+    items.forEach((gif) => {
+      const card = document.createElement('div');
+      card.className = 'media-item';
+      const url = gif.images.original.url.replace(/'/g, "\\'");
+      card.innerHTML = `
+        <img src="${gif.images.fixed_height_small.url}" alt="gif" />
+        <button onclick="sendGif('${url}')">Send</button>
+      `;
+      list.appendChild(card);
+    });
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = '<div class="message"><div class="message-meta">System</div><div class="message-content">Failed to load GIFs. Check your Giphy key.</div></div>';
+  }
+}
+
+async function sendGif(url) {
+  try {
+    if (state.currentChannel) {
+      const { error } = await supabase.from('messages').insert([
+        { channel_id: state.currentChannel.id, sender_id: state.user.id, content: 'GIF', type: 'gif', media_url: url }
+      ]);
+      if (error) throw error;
+      await loadMessages();
+    } else if (state.dmTarget) {
+      const { error } = await supabase.from('direct_messages').insert([
+        { sender_id: state.user.id, recipient_id: state.dmTarget.id, content: 'GIF', type: 'gif', media_url: url }
+      ]);
+      if (error) throw error;
+      await loadDMMessages(state.dmTarget.id);
+    }
+    closeGifModal();
+  } catch (err) {
+    alert(err.message || 'Unable to send GIF.');
+  }
+}
+
+async function loadStickers() {
+  const { data, error } = await supabase.from('stickers').select('*').order('created_at', { ascending: false });
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const list = document.getElementById('sticker-results');
+  list.innerHTML = '';
+
+  if (!data.length) {
+    list.innerHTML = '<div class="message"><div class="message-meta">System</div><div class="message-content">No stickers yet. Mods can add them.</div></div>';
+    return;
+  }
+
+  data.forEach((sticker) => {
+    const card = document.createElement('div');
+    card.className = 'media-item';
+    const url = sticker.image_url.replace(/'/g, "\\'");
+    card.innerHTML = `
+      <img src="${sticker.image_url}" alt="sticker" />
+      <button onclick="sendSticker('${url}')">Send</button>
+    `;
+    list.appendChild(card);
+  });
+}
+
+async function sendSticker(url) {
+  try {
+    if (state.currentChannel) {
+      const { error } = await supabase.from('messages').insert([
+        { channel_id: state.currentChannel.id, sender_id: state.user.id, content: 'Sticker', type: 'sticker', media_url: url }
+      ]);
+      if (error) throw error;
+      await loadMessages();
+    } else if (state.dmTarget) {
+      const { error } = await supabase.from('direct_messages').insert([
+        { sender_id: state.user.id, recipient_id: state.dmTarget.id, content: 'Sticker', type: 'sticker', media_url: url }
+      ]);
+      if (error) throw error;
+      await loadDMMessages(state.dmTarget.id);
+    }
+    closeStickerModal();
+  } catch (err) {
+    alert(err.message || 'Unable to send sticker.');
+  }
+}
+
+async function uploadSticker() {
+  const name = document.getElementById('sticker-name').value.trim();
+  const url = document.getElementById('sticker-url').value.trim();
+
+  if (!name || !url) {
+    alert('Please fill in both fields.');
+    return;
+  }
+
+  if (!hasPermission(state.profile?.rank || 'user', 'mod')) {
+    alert('Only Mod or higher can upload stickers.');
+    return;
+  }
+
+  try {
+    const { error } = await supabase.from('stickers').insert([
+      { name, image_url: url, uploaded_by: state.user.id, approved: true }
+    ]);
+
+    if (error) throw error;
+
+    closeStickerUploadModal();
+    document.getElementById('sticker-name').value = '';
+    document.getElementById('sticker-url').value = '';
+    await loadStickers();
+  } catch (err) {
+    alert(err.message || 'Sticker upload failed.');
+  }
+}
+
+async function saveProfile() {
+  const username = document.getElementById('profile-username').value.trim();
+  const status = document.getElementById('profile-status').value.trim();
+  const avatar = document.getElementById('profile-avatar').value.trim();
+  const bio = document.getElementById('profile-bio').value.trim();
+  const about = document.getElementById('profile-about').value.trim();
+
+  if (!username) {
+    alert('Username is required.');
+    return;
+  }
+
+  try {
+    const { error } = await supabase.from('profiles').update({
+      username,
+      status: status || 'online',
+      avatar_url: avatar,
+      bio,
+      about,
+      theme: state.theme
+    }).eq('id', state.user.id);
+
+    if (error) throw error;
+    await loadProfile();
+    closeProfileModal();
+  } catch (err) {
+    alert(err.message || 'Unable to save profile.');
+  }
+}
+
+async function changeTheme(theme) {
+  setTheme(theme);
+  if (!state.user) return;
+  await supabase.from('profiles').update({ theme }).eq('id', state.user.id);
+}
+
+async function createChannelPrompt() {
+  if (!hasPermission(state.profile?.rank || 'user', 'admin')) {
+    alert('Only Admin or higher can create channels.');
+    return;
+  }
+
+  const name = prompt('Channel name:');
+  if (!name) return;
+
+  try {
+    const { error } = await supabase.from('channels').insert([
+      { name: name.trim(), created_by: state.user.id }
+    ]);
+
+    if (error) throw error;
+    await loadChannels();
+  } catch (err) {
+    alert(err.message || 'Unable to create channel.');
+  }
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.remove('hidden');
+  loadChannels();
+  loadPeople();
+}
+
+async function init() {
+  setTheme(state.theme);
+
+  const { data } = await supabase.auth.getSession();
+  if (data.session) {
+    state.user = data.session.user;
+    await loadProfile();
+    showApp();
+  }
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      state.user = session.user;
+      loadProfile();
+      showApp();
+    }
+
+    if (event === 'SIGNED_OUT') {
+      state.user = null;
+      state.profile = null;
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('app-screen').classList.add('hidden');
+    }
+  });
+
+  document.getElementById('composer-input').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') sendTextMessage();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+window.login = login;
+window.signup = signup;
+window.logout = logout;
+window.showLogin = showLogin;
+window.showSignup = showSignup;
+window.openProfileModal = openProfileModal;
+window.closeProfileModal = closeProfileModal;
+window.openGifModal = openGifModal;
+window.closeGifModal = closeGifModal;
+window.openStickerModal = openStickerModal;
+window.closeStickerModal = closeStickerModal;
+window.openStickerUploadModal = openStickerUploadModal;
+window.closeStickerUploadModal = closeStickerUploadModal;
+window.saveProfile = saveProfile;
+window.createChannelPrompt = createChannelPrompt;
+window.sendTextMessage = sendTextMessage;
+window.searchGifs = searchGifs;
+window.sendGif = sendGif;
+window.sendSticker = sendSticker;
+window.uploadSticker = uploadSticker;
+window.changeTheme = changeTheme;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
