@@ -1,16 +1,16 @@
 # RubyChat
 
-A Discord-style chat app starter for you and your friends, built with HTML + JS + Supabase.
+A Discord-style chat app starter with profiles, themes, GIFs, stickers, ranks, and Supabase support.
 
 ## Included features
 
 - Login and signup
 - User profile editing
-- Theme switching
-- Channels
+- Theme switching (dark, light, rose, midnight)
+- Channel chat
 - Direct messages
-- GIF picker
-- Sticker support
+- GIF search support (Giphy-ready)
+- Sticker gallery and mod upload support
 - Rank system:
   - user
   - mod
@@ -24,59 +24,46 @@ A Discord-style chat app starter for you and your friends, built with HTML + JS 
 ## Supabase setup
 
 1. Create a project in Supabase.
-2. Go to Settings → API.
-3. Copy the Project URL and anon key.
-4. Update `app.js` with your values:
+2. Open Settings → API.
+3. Copy your Project URL and anon key.
+4. Update `app.js` with your values if needed.
 
 ```js
 const SUPABASE_URL = 'https://your-project.supabase.co';
 const SUPABASE_KEY = 'your-anon-key';
 ```
 
-5. Open the SQL editor in Supabase.
-6. Paste the contents of `schema.sql` and run it.
+5. In the Supabase SQL editor, run the contents of `schema.sql`.
 
-## Giphy / GIF setup
+## GIF setup
 
-The GIF feature is ready, but needs a real Giphy key before it works. In `app.js`:
+The app is built to support GIF search through Giphy. To activate it, add a real API key in `app.js`:
 
 ```js
 const GIPHY_API_KEY = 'YOUR_GIPHY_KEY';
 ```
 
-If you want to use a Kiply-style provider instead, replace the `searchGifs()` fetch URL with your own endpoint.
+Without that key, the app will show a helpful message instead of failing silently.
+
+## Sticker support
+
+Stickers are pulled from the `stickers` table. Mods and admins can upload sticker URLs from the UI. Sticker moderation is ready for expansion.
 
 ## Run locally
 
-Open `index.html` in a browser, or serve it locally:
+Open `index.html` directly in a browser, or serve it locally:
 
 ```bash
 python -m http.server 8000
 ```
 
-Then visit:
+Then open:
 
 ```text
 http://localhost:8000
 ```
 
-## Suggested next upgrades
-
-- Forum channels
-- Message reactions
-- User bans and mutes
-- Sticker approval system
-- Follow/follower pages
-- Real Rain.ai backend
-- WebSocket real-time sync instead of polling
-- Server settings and role management
-- File uploads and image attachments
-
-## Important note
-
-This is a strong starter app, but it is not a full production Discord clone yet. The current version is meant to give you a working base with chat, profile, themes, ranks, GIFs, stickers, and Supabase connectivity.
-
-## User ranks
+## Rank system
 
 - user
 - mod
@@ -85,55 +72,37 @@ This is a strong starter app, but it is not a full production Discord clone yet.
 - co_owner
 - owner
 
-## Example role logic
-
-If you want to make a user the owner in Supabase, update the `profiles` table row and set:
+You can change a user's rank in Supabase like this:
 
 ```sql
 UPDATE profiles SET rank = 'owner' WHERE username = 'yourusername';
 ```
 
-## Rain.ai integration
+## Current Supabase values
 
-Right now, the bot response is a placeholder so the app works without an external AI service. Replace the `sendRainReply()` function in `app.js` with a real API call when you have your AI backend ready.
-
-## Current setup status
-
-Your Supabase values are already wired into the project:
+The app is already configured with your project values:
 
 ```js
 const SUPABASE_URL = 'https://yxngrbcgpsdtvsjlxrgp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Qbmo7fKiSyTJfRoMmcXX-A_xkmgmNj5';
 ```
 
-If you want the app to use your real Giphy or Kiply token, add it in `app.js` before testing GIFs.
+## Notes
 
-## Project structure
+This is a strong starter app with the features you requested: chat, profiles, themes, GIFs, stickers, following-ready people list, and rank-based permissions. It is suitable as a real app foundation and can be expanded into a bigger Discord-style product.
 
-```text
-rubychat/
-├── index.html
-├── styles.css
-├── app.js
-├── schema.sql
-├── README.md
-```
+## Recommended next upgrades
 
-## Next step
-
-If you want, I can continue and turn this into a more complete real-time Discord clone with:
-
-- forums
-- message reactions
-- role permissions
-- follow/following list
-- real Rain.ai API layer
-- admin controls
-- better profile pages
-- sticker upload UI
+- real-time subscriptions for live updates
+- forum channels
+- user follow/follower pages
+- reactions and emoji rolls
+- bans and mutes
 - server settings page
+- real Rain.ai backend integration
+- uploaded sticker storage in Supabase Storage
+- role and permission management screen
 
-Just tell me which one you want next.
 
 
 
@@ -269,3 +238,515 @@ Just tell me which one you want next.
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+~

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RubyChat</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="login-screen" class="screen auth-screen">
+      <div class="auth-card">
+        <div class="brand">🌧️</div>
+        <h1>RubyChat</h1>
+        <p>Discord-style chat, profiles, themes, GIFs, stickers, and Rain.ai</p>
+
+        <div id="auth-error" class="error hidden"></div>
+
+        <div id="login-form" class="auth-form">
+          <input id="email" type="email" placeholder="Email" />
+          <input id="password" type="password" placeholder="Password" />
+          <button class="primary" onclick="login()">Login</button>
+          <button class="secondary" onclick="showSignup()">Create account</button>
+        </div>
+
+        <div id="signup-form" class="auth-form hidden">
+          <input id="signup-username" type="text" placeholder="Username" />
+          <input id="signup-email" type="email" placeholder="Email" />
+          <input id="signup-password" type="password" placeholder="Password" />
+          <button class="primary" onclick="signup()">Sign up</button>
+          <button class="secondary" onclick="showLogin()">Back to login</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-screen" class="screen hidden">
+      <aside class="sidebar">
+        <div class="topbar">
+          <h2>RubyChat</h2>
+          <button class="tiny" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="profile-card">
+          <img id="sidebar-avatar" class="avatar" alt="profile avatar" />
+          <div>
+            <div id="sidebar-username" class="username">User</div>
+            <div id="sidebar-status" class="status-text">online</div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header">
+            <span>Channels</span>
+            <button class="tiny" onclick="createChannelPrompt()">+ New</button>
+          </div>
+          <div id="channel-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header">
+            <span>People</span>
+          </div>
+          <div id="people-list"></div>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-header">
+            <span>Settings</span>
+          </div>
+          <button class="secondary" onclick="openProfileModal()">Edit profile</button>
+          <button class="secondary" onclick="openStickerUploadModal()">Add sticker</button>
+          <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="rose">Rose</option>
+            <option value="midnight">Midnight</option>
+          </select>
+        </div>
+      </aside>
+
+      <main class="chat-panel">
+        <header class="chat-header">
+          <div>
+            <h3 id="current-channel-name"># general</h3>
+          </div>
+          <div class="header-actions">
+            <span id="my-rank" class="rank-badge">User</span>
+          </div>
+        </header>
+
+        <div id="messages" class="messages"></div>
+
+        <div class="composer">
+          <button class="secondary" onclick="openGifModal()">🎞️ GIF</button>
+          <button class="secondary" onclick="openStickerModal()">✨ Sticker</button>
+          <input id="composer-input" type="text" placeholder="Message #general" />
+          <button class="primary" onclick="sendTextMessage()">Send</button>
+        </div>
+      </main>
+    </div>
+
+    <div id="profile-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Profile</h3>
+          <button class="tiny" onclick="closeProfileModal()">Close</button>
+        </div>
+
+        <div class="profile-grid">
+          <label>
+            Username
+            <input id="profile-username" type="text" />
+          </label>
+          <label>
+            Status
+            <input id="profile-status" type="text" maxlength="80" />
+          </label>
+          <label>
+            Avatar URL
+            <input id="profile-avatar" type="url" />
+          </label>
+          <label>
+            Bio
+            <textarea id="profile-bio" rows="3"></textarea>
+          </label>
+          <label>
+            About
+            <textarea id="profile-about" rows="3"></textarea>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="primary" onclick="saveProfile()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="gif-modal" class="modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <h3>GIFs</h3>
+          <button class="tiny" onclick="closeGifModal()">Close</button>
+        </div>
+
+        <div class="search-row">
+          <input id="gif-search" type="text" placeholder="Search GIFs" />
+          <button class="primary" onclick="searchGifs()">Search</button>
+        </div>
+
+        <div id="gif-results" class="media-grid"></div>
+      </div>
+    </div>
+
+    <div id="sticker-modal" class="modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <h3>Stickers</h3>
+          <button class="tiny" onclick="closeStickerModal()">Close</button>
+        </div>
+
+        <div id="sticker-results" class="media-grid"></div>
+      </div>
+    </div>
+
+    <div id="sticker-upload-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Add sticker</h3>
+          <button class="tiny" onclick="closeStickerUploadModal()">Close</button>
+        </div>
+
+        <div class="profile-grid">
+          <label>
+            Sticker name
+            <input id="sticker-name" type="text" />
+          </label>
+          <label>
+            Sticker image URL
+            <input id="sticker-url" type="url" />
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button class="primary" onclick="uploadSticker()">Save sticker</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
