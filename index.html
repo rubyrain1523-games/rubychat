@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RubyChat - Discord Clone</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen">
+            <div class="auth-container">
+                <h1>🌧️ RubyChat</h1>
+                <p>Discord clone with AI</p>
+                <div class="auth-form">
+                    <input type="email" id="email" placeholder="Email" />
+                    <input type="password" id="password" placeholder="Password" />
+                    <button onclick="login()">Login</button>
+                    <button onclick="toggleSignup()" style="background: #888;">Sign Up</button>
+                </div>
+                <div id="signup-form" class="hidden">
+                    <input type="text" id="username" placeholder="Username" />
+                    <input type="email" id="signup-email" placeholder="Email" />
+                    <input type="password" id="signup-password" placeholder="Password" />
+                    <button onclick="signup()">Create Account</button>
+                    <button onclick="toggleSignup()" style="background: #888;">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Screen -->
+        <div id="app-screen" class="screen hidden">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h2>RubyChat</h2>
+                    <button onclick="logout()">Logout</button>
+                </div>
+
+                <div class="section">
+                    <h3>Channels</h3>
+                    <div id="channels-list"></div>
+                    <button onclick="showCreateChannel()" class="add-btn">+ Channel</button>
+                </div>
+
+                <div class="section">
+                    <h3>Direct Messages</h3>
+                    <div id="dms-list"></div>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="chat-header">
+                    <h2 id="current-channel">Select a channel</h2>
+                    <span id="user-role" class="role-badge"></span>
+                </div>
+
+                <div id="messages-container" class="messages-container"></div>
+
+                <div class="message-input-area">
+                    <input type="text" id="message-input" placeholder="Type a message..." />
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
