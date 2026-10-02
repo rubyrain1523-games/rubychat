@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111416">
+    <title>RubyChat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <section id="login-screen" class="screen auth-screen">
+            <div class="auth-brand">
+                <div class="wordmark"><span class="brand-glyph">R</span><span>RUBYCHAT</span></div>
+                <div class="brand-copy">
+                    <p class="eyebrow">A PLACE TO LAND</p>
+                    <h1>Talk with<br>your people.</h1>
+                    <p class="brand-description">Channels for the whole room. DMs for one-on-one. Rain is here when you need a hand.</p>
+                </div>
+                <div class="brand-note"><span class="online-indicator"></span> RAIN AI <span>RUNS ON YOUR DEVICE</span></div>
+            </div>
+
+            <div class="auth-panel">
+                <div class="auth-card">
+                    <div class="auth-heading">
+                        <p class="eyebrow" id="auth-eyebrow">YOUR CORNER OF RUBYCHAT</p>
+                        <h2 id="auth-title">Welcome back</h2>
+                        <p id="auth-description">Sign in and pick up where you left off.</p>
+                    </div>
+                    <div id="auth-error" class="auth-message hidden" role="alert"></div>
+                    <div id="login-form" class="auth-form">
+                        <label for="email">Username or email</label>
+                        <input type="text" id="email" placeholder="yourname" autocomplete="username" autocapitalize="none" spellcheck="false">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Your password" autocomplete="current-password">
+                        <button class="primary-button" onclick="login()">Sign in <span aria-hidden="true">→</span></button>
+                        <p class="auth-switch">New around here? <button class="text-button" onclick="toggleSignup()">Create an account</button></p>
+                    </div>
+                    <div id="signup-form" class="auth-form hidden">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="3–24 letters, numbers, or _" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" placeholder="At least 6 characters" autocomplete="new-password" minlength="6">
+                        <button class="primary-button" onclick="signup()">Create account <span aria-hidden="true">→</span></button>
+                        <p class="auth-switch">Already have an account? <button class="text-button" onclick="toggleSignup()">Sign in</button></p>
+                    </div>
+                    <div class="auth-footnote">USERNAME SIGN-IN USES A NON-DELIVERABLE ADDRESS. EMAIL CONFIRMATION MUST BE OFF IN SUPABASE.</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="app-screen" class="screen app-screen hidden">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="wordmark"><span class="brand-glyph">R</span><span>RUBYCHAT</span></div>
+                    <button class="logout-button" onclick="logout()" aria-label="Sign out" title="Sign out">↗</button>
+                </div>
+
+                <div class="sidebar-scroll">
+                    <section class="section">
+                        <div class="section-heading">
+                            <h3>Channels</h3>
+                            <button class="section-action" onclick="showCreateChannel()" aria-label="Create channel" title="Create channel">+</button>
+                        </div>
+                        <div id="channels-list"></div>
+                    </section>
+
+                    <section class="section dm-section">
+                        <div class="section-heading"><h3>Direct messages</h3></div>
+                        <div id="dms-list"></div>
+                    </section>
+                </div>
+
+                <div class="sidebar-user">
+                    <div class="user-avatar" id="sidebar-avatar">R</div>
+                    <div class="user-details"><strong id="sidebar-username">RubyChat member</strong><span>YOUR ACCOUNT</span></div>
+                    <span id="user-role" class="role-badge"></span>
+                </div>
+            </aside>
+
+            <main class="chat-area">
+                <header class="chat-header">
+                    <div class="room-heading">
+                        <span class="room-symbol" aria-hidden="true">#</span>
+                        <div><p class="eyebrow">CURRENT ROOM</p><h2 id="current-channel">Select a channel</h2></div>
+                    </div>
+                    <div class="header-status">
+                        <span class="connection-status"><span class="online-indicator"></span>SIGNED IN</span>
+                        <span id="rain-status" class="rain-status" role="status" aria-live="polite">RAIN · TURBO · ON REQUEST</span>
+                    </div>
+                </header>
+
+                <div id="messages-container" class="messages-container" aria-live="polite"></div>
+
+                <div class="composer-area">
+                    <div class="message-input-area">
+                        <input type="text" id="message-input" placeholder="Select a channel or DM · use @rain.ai" aria-label="Write a message">
+                        <button class="send-button" onclick="sendMessage()">Send <span aria-hidden="true">↗</span></button>
+                    </div>
+                    <div class="composer-hint"><span>ENTER TO SEND</span><span>·</span><span>@RAIN.AI FOR PRIVATE LOCAL HELP</span></div>
+                </div>
+            </main>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
