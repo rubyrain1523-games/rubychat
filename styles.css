@@ -1,305 +1,168 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RubyChat</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="login-screen" class="screen auth-screen">
+        <div class="auth-card">
+          <div class="logo">🌧️</div>
+          <h1>RubyChat</h1>
+          <p>Discord-style chat + Rain.ai</p>
 
-body {
-    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
-    background: #0a0a0d;
-    color: #f5eef1;
-}
+          <div id="auth-error" class="error hidden"></div>
 
-#app {
-    display: flex;
-    height: 100vh;
-}
+          <div id="login-form" class="auth-form">
+            <input id="email" type="email" placeholder="Email" />
+            <input id="password" type="password" placeholder="Password" />
+            <button onclick="login()">Login</button>
+            <button class="secondary" onclick="showSignup()">Create account</button>
+          </div>
 
-.screen {
-    width: 100%;
-    height: 100%;
-    display: flex;
-}
+          <div id="signup-form" class="auth-form hidden">
+            <input id="signup-username" type="text" placeholder="Username" />
+            <input id="signup-email" type="email" placeholder="Email" />
+            <input id="signup-password" type="password" placeholder="Password" />
+            <button onclick="signup()">Sign up</button>
+            <button class="secondary" onclick="showLogin()">Back to login</button>
+          </div>
+        </div>
+      </div>
 
-.screen.hidden {
-    display: none;
-}
+      <div id="chat-screen" class="screen hidden">
+        <aside class="sidebar">
+          <div class="topbar">
+            <h2>RubyChat</h2>
+            <button class="tiny" onclick="logout()">Logout</button>
+          </div>
 
-/* ===== LOGIN SCREEN ===== */
-.auth-container {
-    margin: auto;
-    padding: 40px;
-    background: #121014;
-    border: 1px solid #ff2e88;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-}
+          <div class="profile-card">
+            <img id="sidebar-avatar" class="avatar" alt="avatar" />
+            <div>
+              <div id="sidebar-username" class="username"></div>
+              <div id="sidebar-status" class="status-text"></div>
+            </div>
+          </div>
 
-.auth-container h1 {
-    font-size: 32px;
-    color: #ff2e88;
-    margin-bottom: 10px;
-    text-shadow: 0 0 10px rgba(255, 46, 136, 0.5);
-}
+          <div class="sidebar-section">
+            <div class="section-header">
+              <span>Channels</span>
+              <button class="tiny" onclick="createChannelPrompt()">+ New</button>
+            </div>
+            <div id="channel-list"></div>
+          </div>
 
-.auth-container p {
-    color: #8f8690;
-    margin-bottom: 30px;
-}
+          <div class="sidebar-section">
+            <div class="section-header">
+              <span>People</span>
+            </div>
+            <div id="people-list"></div>
+          </div>
 
-.auth-form, #signup-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+          <div class="sidebar-section">
+            <div class="section-header">
+              <span>Profile</span>
+            </div>
+            <button class="theme-toggle" onclick="openProfileModal()">Edit profile</button>
+            <select id="theme-select" class="theme-select" onchange="changeTheme(this.value)">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="rose">Rose</option>
+              <option value="midnight">Midnight</option>
+            </select>
+          </div>
+        </aside>
 
-#signup-form.hidden {
-    display: none;
-}
+        <main class="chat-panel">
+          <header class="chat-header">
+            <div>
+              <h3 id="current-channel-name"># general</h3>
+            </div>
+            <div class="header-actions">
+              <span id="my-rank" class="rank-badge">User</span>
+            </div>
+          </header>
 
-.auth-form input, #signup-form input {
-    padding: 12px;
-    background: #000;
-    border: 1px solid #ff2e88;
-    border-radius: 6px;
-    color: #f5eef1;
-    font-size: 14px;
-}
+          <div id="messages" class="messages"></div>
 
-.auth-form button, #signup-form button {
-    padding: 12px;
-    background: linear-gradient(135deg, #ff2e88, #b5145c);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
+          <div class="composer">
+            <button onclick="openGifModal()">🎞️ GIF</button>
+            <button onclick="openStickerModal()">✨ Sticker</button>
+            <input id="composer-input" type="text" placeholder="Message #general" />
+            <button class="primary" onclick="sendTextMessage()">Send</button>
+          </div>
+        </main>
+      </div>
+    </div>
 
-.auth-form button:hover, #signup-form button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 46, 136, 0.4);
-}
+    <div id="profile-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Profile</h3>
+          <button class="tiny" onclick="closeProfileModal()">Close</button>
+        </div>
 
-/* ===== MAIN APP ===== */
-#app-screen {
-    display: flex;
-}
+        <div class="profile-grid">
+          <label>
+            Username
+            <input id="profile-username" type="text" />
+          </label>
+          <label>
+            Status
+            <input id="profile-status" type="text" maxlength="80" />
+          </label>
+          <label>
+            Avatar URL
+            <input id="profile-avatar" type="url" />
+          </label>
+          <label>
+            Bio
+            <textarea id="profile-bio" rows="3"></textarea>
+          </label>
+          <label>
+            About
+            <textarea id="profile-about" rows="3"></textarea>
+          </label>
+        </div>
 
-.sidebar {
-    width: 280px;
-    background: #121014;
-    border-right: 1px solid #ff2e88;
-    overflow-y: auto;
-    padding: 16px;
-}
+        <div class="modal-actions">
+          <button class="primary" onclick="saveProfile()">Save</button>
+        </div>
+      </div>
+    </div>
 
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 46, 136, 0.3);
-}
+    <div id="gif-modal" class="modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <h3>GIFs</h3>
+          <button class="tiny" onclick="closeGifModal()">Close</button>
+        </div>
 
-.sidebar-header h2 {
-    font-size: 18px;
-    color: #ff2e88;
-}
+        <div class="search-row">
+          <input id="gif-search" type="text" placeholder="Search GIFs" />
+          <button class="primary" onclick="searchGifs()">Search</button>
+        </div>
 
-.sidebar-header button {
-    padding: 6px 12px;
-    background: #2a1a22;
-    border: 1px solid #ff2e88;
-    color: #ff2e88;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
+        <div id="gif-results" class="media-grid"></div>
+      </div>
+    </div>
 
-.section {
-    margin-bottom: 24px;
-}
+    <div id="sticker-modal" class="modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <h3>Stickers</h3>
+          <button class="tiny" onclick="closeStickerModal()">Close</button>
+        </div>
 
-.section h3 {
-    font-size: 12px;
-    color: #8f8690;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    letter-spacing: 1px;
-}
+        <div id="sticker-results" class="media-grid"></div>
+      </div>
+    </div>
 
-.channel-item, .dm-item {
-    padding: 10px 12px;
-    background: #1a1820;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-bottom: 6px;
-    border-left: 3px solid transparent;
-    transition: all 0.2s;
-}
-
-.channel-item:hover, .dm-item:hover {
-    background: #252029;
-    border-left-color: #ff2e88;
-}
-
-.channel-item.active, .dm-item.active {
-    background: #2a1f28;
-    border-left-color: #ff2e88;
-    color: #ff2e88;
-}
-
-.add-btn {
-    width: 100%;
-    padding: 10px;
-    background: #1a1820;
-    border: 1px solid #ff2e88;
-    color: #ff2e88;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    margin-top: 8px;
-}
-
-.add-btn:hover {
-    background: #252029;
-}
-
-/* ===== CHAT AREA ===== */
-.chat-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: #0a0a0d;
-}
-
-.chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 24px;
-    background: #121014;
-    border-bottom: 1px solid rgba(255, 46, 136, 0.2);
-}
-
-.chat-header h2 {
-    font-size: 18px;
-    color: #ff2e88;
-}
-
-.role-badge {
-    padding: 4px 12px;
-    background: rgba(255, 46, 136, 0.2);
-    border: 1px solid #ff2e88;
-    border-radius: 999px;
-    font-size: 12px;
-    color: #ff2e88;
-}
-
-.messages-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.message {
-    padding: 10px 14px;
-    border-radius: 8px;
-    max-width: 60%;
-    word-wrap: break-word;
-    animation: slideIn 0.2s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.message.user {
-    align-self: flex-end;
-    background: linear-gradient(135deg, #ff2e88, #b5145c);
-    color: #fff;
-}
-
-.message.bot {
-    align-self: flex-start;
-    background: #1a1820;
-    border: 1px solid rgba(255, 46, 136, 0.3);
-    color: #ff2e88;
-}
-
-.message-meta {
-    font-size: 11px;
-    color: #8f8690;
-    margin-bottom: 4px;
-}
-
-.message-input-area {
-    display: flex;
-    gap: 12px;
-    padding: 16px 24px;
-    background: #121014;
-    border-top: 1px solid rgba(255, 46, 136, 0.2);
-}
-
-.message-input-area input {
-    flex: 1;
-    padding: 12px 14px;
-    background: #000;
-    border: 1px solid #ff2e88;
-    border-radius: 20px;
-    color: #f5eef1;
-    font-size: 14px;
-}
-
-.message-input-area input:focus {
-    outline: none;
-    border-color: #ff6fb0;
-}
-
-.message-input-area button {
-    padding: 0 20px;
-    background: linear-gradient(135deg, #ff2e88, #b5145c);
-    border: none;
-    border-radius: 20px;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.message-input-area button:hover {
-    box-shadow: 0 4px 12px rgba(255, 46, 136, 0.4);
-}
-
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #121014;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #ff2e88;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #ff6fb0;
-}
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

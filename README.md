@@ -1,158 +1,271 @@
-# 🌧️ RubyChat
+# RubyChat
 
-A Discord-style chat app with **@rain.ai** bot integration, built with **HTML/CSS/JS + Supabase**.
+A Discord-style chat app starter for you and your friends, built with HTML + JS + Supabase.
 
-## Features
+## Included features
 
-✅ User authentication (login/signup)
-✅ User roles (Owner, Admin, Member)
-✅ Channels (text-based chat)
-✅ Direct Messages (one-on-one chat)
-✅ @rain.ai bot (responds to mentions and DMs)
-✅ Real-time messaging
-✅ Responsive design with pink/dark theme
+- Login and signup
+- User profile editing
+- Theme switching
+- Channels
+- Direct messages
+- GIF picker
+- Sticker support
+- Rank system:
+  - user
+  - mod
+  - admin
+  - super_admin
+  - co_owner
+  - owner
+- Rain.ai mention placeholder
+- Supabase-ready schema
 
-## Setup
+## Supabase setup
 
-### 1. Create a Supabase Project
+1. Create a project in Supabase.
+2. Go to Settings → API.
+3. Copy the Project URL and anon key.
+4. Update `app.js` with your values:
 
-1. Go to [supabase.com](https://supabase.com) and create a free account
-2. Create a new project
-3. Copy your project URL and API key (found in Project Settings → API)
+```js
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_KEY = 'your-anon-key';
+```
 
-### 2. Set Up Database
+5. Open the SQL editor in Supabase.
+6. Paste the contents of `schema.sql` and run it.
 
-1. Open the SQL editor in Supabase
-2. Copy the entire contents of `schema.sql`
-3. Paste it into the Supabase SQL editor and run it
-4. This creates all the tables and security policies
+## Giphy / GIF setup
 
-### 3. Configure the App
+The GIF feature is ready, but needs a real Giphy key before it works. In `app.js`:
 
-1. Open `app.js`
-2. Replace:
-   ```javascript
-   const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-   const SUPABASE_KEY = 'YOUR_SUPABASE_KEY';
-   ```
-   With your actual Supabase URL and key from step 1.
+```js
+const GIPHY_API_KEY = 'YOUR_GIPHY_KEY';
+```
 
-### 4. Run Locally
+If you want to use a Kiply-style provider instead, replace the `searchGifs()` fetch URL with your own endpoint.
 
-Simply open `index.html` in your browser!
+## Run locally
 
-Or use a local server:
+Open `index.html` in a browser, or serve it locally:
+
 ```bash
 python -m http.server 8000
-# or
-node -e "require('http').createServer((q,s)=>require('fs').createReadStream('.'+q.url).pipe(s)).listen(8000)"
 ```
 
-Then visit `http://localhost:8000`
+Then visit:
 
-## Create Your First User
-
-1. Click "Sign Up"
-2. Enter username, email, password
-3. You'll be the first user (default role: `member`)
-4. To become owner, update the role in Supabase:
-   - Go to Supabase → `profiles` table
-   - Find your profile row
-   - Change `role` from `member` to `owner`
-
-## Add @rain.ai Bot
-
-### Option 1: Offline (Local AI)
-
-Embed the offline Rain.ai HTML file:
-```html
-<!-- In index.html <head> -->
-<script src="rain-ai.html"></script>
+```text
+http://localhost:8000
 ```
 
-### Option 2: Use an API
+## Suggested next upgrades
 
-In `app.js`, replace the `generateAIResponse()` function:
+- Forum channels
+- Message reactions
+- User bans and mutes
+- Sticker approval system
+- Follow/follower pages
+- Real Rain.ai backend
+- WebSocket real-time sync instead of polling
+- Server settings and role management
+- File uploads and image attachments
 
-```javascript
-async function generateAIResponse(userMessage) {
-    try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${YOUR_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                messages: [{ role: 'user', content: userMessage }],
-                max_tokens: 150
-            })
-        });
+## Important note
 
-        const data = await response.json();
-        const aiReply = data.choices[0].message.content;
+This is a strong starter app, but it is not a full production Discord clone yet. The current version is meant to give you a working base with chat, profile, themes, ranks, GIFs, stickers, and Supabase connectivity.
 
-        const { error } = await supabase.from('messages').insert([{
-            channel_id: currentChannel.id,
-            sender_id: 'rain-ai',
-            content: aiReply
-        }]);
+## User ranks
 
-        if (error) throw error;
-        loadMessages();
-    } catch (err) {
-        console.error('AI error:', err);
-    }
-}
+- user
+- mod
+- admin
+- super_admin
+- co_owner
+- owner
+
+## Example role logic
+
+If you want to make a user the owner in Supabase, update the `profiles` table row and set:
+
+```sql
+UPDATE profiles SET rank = 'owner' WHERE username = 'yourusername';
 ```
 
-## Usage
+## Rain.ai integration
 
-- **Create Channel**: Click "+Channel" (admin only)
-- **Send Message**: Type in the input box and press Enter or click Send
-- **Mention Bot**: Type `@rain.ai` in any message
-- **DM a User**: Click a user in the "Direct Messages" list
-- **Check Role**: Your role badge appears in the top right
+Right now, the bot response is a placeholder so the app works without an external AI service. Replace the `sendRainReply()` function in `app.js` with a real API call when you have your AI backend ready.
 
-## User Roles
+## Current setup status
 
-- **Member**: Can send messages, view channels
-- **Admin**: Can create channels, moderate
-- **Owner**: Full control, can assign roles
+Your Supabase values are already wired into the project:
 
-## Project Structure
-
+```js
+const SUPABASE_URL = 'https://yxngrbcgpsdtvsjlxrgp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Qbmo7fKiSyTJfRoMmcXX-A_xkmgmNj5';
 ```
+
+If you want the app to use your real Giphy or Kiply token, add it in `app.js` before testing GIFs.
+
+## Project structure
+
+```text
 rubychat/
-├── index.html     # Main UI
-├── styles.css     # Dark pink theme
-├── app.js         # Supabase + chat logic
-├── schema.sql     # Database setup
-└── README.md      # This file
+├── index.html
+├── styles.css
+├── app.js
+├── schema.sql
+├── README.md
 ```
 
-## Troubleshooting
+## Next step
 
-**"Error: Supabase not found"**
-- Make sure the CDN script loaded: `<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>`
+If you want, I can continue and turn this into a more complete real-time Discord clone with:
 
-**"Invalid credentials"**
-- Check your SUPABASE_URL and SUPABASE_KEY in app.js
-- Make sure the project is active in Supabase dashboard
+- forums
+- message reactions
+- role permissions
+- follow/following list
+- real Rain.ai API layer
+- admin controls
+- better profile pages
+- sticker upload UI
+- server settings page
 
-**Messages not loading**
-- Check that the `messages` table exists (run schema.sql again)
-- Check RLS policies (should be public for SELECT)
+Just tell me which one you want next.
 
-## Next Steps
 
-1. Add forums (thread-based discussions)
-2. Add file uploads
-3. Add reactions/emojis
-4. Add bot commands
-5. Deploy to Vercel/Netlify
 
-## License
 
-MIT - Feel free to use and modify!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

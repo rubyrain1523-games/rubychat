@@ -1,324 +1,461 @@
-// ===== SUPABASE CONFIG =====
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Replace with your URL
-const SUPABASE_KEY = 'YOUR_SUPABASE_KEY'; // Replace with your key
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ===== STATE =====
-let currentUser = null;
-let currentChannel = null;
-let userRole = 'member';
-
-// ===== AUTH FUNCTIONS =====
-async function login() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    if (!email || !password) {
-        alert('Please enter email and password');
-        return;
-    }
-
-    try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        });
-
-        if (error) throw error;
-
-        currentUser = data.user;
-        await loadUserProfile();
-        switchToAppScreen();
-    } catch (err) {
-        alert('Login failed: ' + err.message);
-    }
+:root {
+  --bg: #0b0d12;
+  --bg-2: #131922;
+  --panel: #181d2a;
+  --panel-2: #202a39;
+  --text: #f2f5fa;
+  --muted: #9aa7b7;
+  --primary: #ff2e88;
+  --primary-dark: #c51169;
+  --border: rgba(255, 46, 136, 0.25);
+  --success: #4ade80;
+  --danger: #ef4444;
+  --shadow: rgba(0, 0, 0, 0.35);
 }
 
-async function signup() {
-    const username = document.getElementById('username').value.trim();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value.trim();
-
-    if (!username || !email || !password) {
-        alert('Please fill in all fields');
-        return;
-    }
-
-    try {
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password
-        });
-
-        if (error) throw error;
-
-        // Create user profile
-        const { error: profileError } = await supabase.from('profiles').insert([
-            {
-                id: data.user.id,
-                username,
-                role: 'member'
-            }
-        ]);
-
-        if (profileError) throw profileError;
-
-        alert('Account created! Please log in.');
-        toggleSignup();
-    } catch (err) {
-        alert('Signup failed: ' + err.message);
-    }
+body.light {
+  --bg: #f3f5f9;
+  --bg-2: #dde6f1;
+  --panel: #ffffff;
+  --panel-2: #edf2fa;
+  --text: #1b2430;
+  --muted: #5c6a7d;
+  --primary: #ff2e88;
+  --primary-dark: #cf0f6a;
+  --border: rgba(255, 46, 136, 0.2);
+  --shadow: rgba(93, 104, 120, 0.12);
 }
 
-async function logout() {
-    await supabase.auth.signOut();
-    currentUser = null;
-    currentChannel = null;
-    switchToLoginScreen();
+body.rose {
+  --bg: #180d13;
+  --bg-2: #2a1620;
+  --panel: #28171e;
+  --panel-2: #3f1f2d;
+  --text: #fdf2f8;
+  --muted: #d7b6c7;
+  --primary: #f472b6;
+  --primary-dark: #d946ef;
+  --border: rgba(244, 114, 182, 0.35);
+  --shadow: rgba(0, 0, 0, 0.3);
 }
 
-function toggleSignup() {
-    document.getElementById('signup-form').classList.toggle('hidden');
-    document.getElementById('email').value = '';
-    document.getElementById('password').value = '';
+body.midnight {
+  --bg: #070b16;
+  --bg-2: #101a2a;
+  --panel: #0f172a;
+  --panel-2: #162235;
+  --text: #e2e8f0;
+  --muted: #8aa1ba;
+  --primary: #60a5fa;
+  --primary-dark: #2563eb;
+  --border: rgba(96, 165, 250, 0.35);
+  --shadow: rgba(15, 23, 42, 0.6);
 }
 
-// ===== SCREEN SWITCHING =====
-function switchToLoginScreen() {
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('app-screen').classList.add('hidden');
+* {
+  box-sizing: border-box;
 }
 
-function switchToAppScreen() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-screen').classList.remove('hidden');
-    loadChannels();
-    loadDMs();
+html, body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
 }
 
-// ===== USER PROFILE =====
-async function loadUserProfile() {
-    try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (error) throw error;
-
-        userRole = data.role;
-        document.getElementById('user-role').textContent = userRole.toUpperCase();
-    } catch (err) {
-        console.error('Error loading profile:', err);
-    }
+body {
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-// ===== CHANNELS =====
-async function loadChannels() {
-    try {
-        const { data, error } = await supabase.from('channels').select('*');
-        if (error) throw error;
-
-        const list = document.getElementById('channels-list');
-        list.innerHTML = '';
-
-        data.forEach(channel => {
-            const div = document.createElement('div');
-            div.className = 'channel-item';
-            div.textContent = '# ' + channel.name;
-            div.onclick = () => selectChannel(channel);
-            list.appendChild(div);
-        });
-    } catch (err) {
-        console.error('Error loading channels:', err);
-    }
+button, input, select, textarea {
+  font: inherit;
 }
 
-function selectChannel(channel) {
-    currentChannel = channel;
-    document.getElementById('current-channel').textContent = '# ' + channel.name;
-    document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
-    event.target.classList.add('active');
-    loadMessages();
+button {
+  cursor: pointer;
 }
 
-function showCreateChannel() {
-    const name = prompt('Channel name:');
-    if (!name) return;
-
-    createChannel(name);
+.screen {
+  display: flex;
+  min-height: 100vh;
 }
 
-async function createChannel(name) {
-    if (userRole !== 'owner' && userRole !== 'admin') {
-        alert('Only admins can create channels');
-        return;
-    }
-
-    try {
-        const { error } = await supabase.from('channels').insert([
-            {
-                name,
-                created_by: currentUser.id
-            }
-        ]);
-
-        if (error) throw error;
-        loadChannels();
-    } catch (err) {
-        alert('Error creating channel: ' + err.message);
-    }
+.hidden {
+  display: none !important;
 }
 
-// ===== MESSAGES =====
-async function loadMessages() {
-    if (!currentChannel) return;
-
-    try {
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*, profiles(username)')
-            .eq('channel_id', currentChannel.id)
-            .order('created_at', { ascending: true })
-            .limit(50);
-
-        if (error) throw error;
-
-        const container = document.getElementById('messages-container');
-        container.innerHTML = '';
-
-        data.forEach(msg => {
-            displayMessage(msg);
-        });
-
-        container.scrollTop = container.scrollHeight;
-    } catch (err) {
-        console.error('Error loading messages:', err);
-    }
+.auth-screen {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, rgba(255, 46, 136, 0.12), transparent 40%), var(--bg);
 }
 
-function displayMessage(msg) {
-    const container = document.getElementById('messages-container');
-    const div = document.createElement('div');
-    div.className = msg.sender_id === currentUser.id ? 'message user' : 'message bot';
-    
-    const meta = document.createElement('div');
-    meta.className = 'message-meta';
-    meta.textContent = (msg.profiles?.username || 'Unknown') + ' • ' + new Date(msg.created_at).toLocaleTimeString();
-    
-    const content = document.createElement('div');
-    content.textContent = msg.content;
-    
-    div.appendChild(meta);
-    div.appendChild(content);
-    container.appendChild(div);
+.auth-card {
+  width: min(420px, calc(100vw - 2rem));
+  background: rgba(24, 29, 42, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: 0 20px 60px var(--shadow);
 }
 
-async function sendMessage() {
-    if (!currentChannel || !currentUser) return;
-
-    const input = document.getElementById('message-input');
-    const content = input.value.trim();
-
-    if (!content) return;
-
-    // Check for @rain.ai mention
-    const mentionsRain = content.toLowerCase().includes('@rain.ai');
-
-    try {
-        const { data, error } = await supabase.from('messages').insert([
-            {
-                channel_id: currentChannel.id,
-                sender_id: currentUser.id,
-                content
-            }
-        ]);
-
-        if (error) throw error;
-
-        input.value = '';
-        loadMessages();
-
-        // If @rain.ai mentioned, get AI response
-        if (mentionsRain) {
-            await generateAIResponse(content);
-        }
-    } catch (err) {
-        alert('Error sending message: ' + err.message);
-    }
+.logo {
+  font-size: 2.25rem;
+  margin-bottom: 0.5rem;
 }
 
-// ===== AI RESPONSE (Rain.ai) =====
-async function generateAIResponse(userMessage) {
-    try {
-        // TODO: Call your AI endpoint here
-        // This is a placeholder - replace with actual Rain.ai or API call
-        const aiReply = "Thanks for the message! I'm Rain.ai and I'm here to help.";
-
-        const { error } = await supabase.from('messages').insert([
-            {
-                channel_id: currentChannel.id,
-                sender_id: 'rain-ai', // Special ID for bot
-                content: aiReply
-            }
-        ]);
-
-        if (error) throw error;
-        loadMessages();
-    } catch (err) {
-        console.error('Error generating AI response:', err);
-    }
+.auth-card h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
 }
 
-// ===== DIRECT MESSAGES =====
-async function loadDMs() {
-    try {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .neq('id', currentUser.id);
-
-        if (error) throw error;
-
-        const list = document.getElementById('dms-list');
-        list.innerHTML = '';
-
-        data.forEach(user => {
-            const div = document.createElement('div');
-            div.className = 'dm-item';
-            div.textContent = '@' + user.username;
-            div.onclick = () => selectDM(user);
-            list.appendChild(div);
-        });
-    } catch (err) {
-        console.error('Error loading DMs:', err);
-    }
+.auth-card p {
+  color: var(--muted);
+  margin: 0.5rem 0 1.5rem;
 }
 
-function selectDM(user) {
-    currentChannel = { id: 'dm-' + user.id, name: user.username, is_dm: true, recipient_id: user.id };
-    document.getElementById('current-channel').textContent = '@' + user.username;
-    document.querySelectorAll('.dm-item').forEach(el => el.classList.remove('active'));
-    event.target.classList.add('active');
-    loadMessages();
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-// ===== KEYBOARD SHORTCUT =====
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && document.activeElement.id === 'message-input') {
-        sendMessage();
-    }
-});
+input, textarea, select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
+  outline: none;
+}
 
-// ===== INIT =====
-window.addEventListener('load', async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-        currentUser = data.session.user;
-        await loadUserProfile();
-        switchToAppScreen();
-    } else {
-        switchToLoginScreen();
-    }
-});
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(255, 46, 136, 0.14);
+}
+
+button {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button.primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: transparent;
+}
+
+button.tiny {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.error {
+  margin-bottom: 1rem;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fecaca;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+}
+
+.sidebar {
+  width: 320px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.topbar h2 {
+  margin: 0;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid var(--primary);
+}
+
+.username {
+  font-weight: 700;
+}
+
+.status-text {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.2rem;
+}
+
+.channel-item, .user-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  color: var(--text);
+  transition: border 0.2s ease, background 0.2s ease;
+}
+
+.channel-item.active, .user-item.active {
+  border-color: var(--primary);
+  background: rgba(255, 46, 136, 0.08);
+}
+
+.theme-toggle, .theme-select {
+  width: 100%;
+}
+
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.chat-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 46, 136, 0.1);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.01) 100%);
+}
+
+.message {
+  max-width: min(72%, 680px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  box-shadow: 0 10px 24px var(--shadow);
+}
+
+.message.self {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-color: transparent;
+}
+
+.message-meta {
+  font-size: 0.74rem;
+  opacity: 0.78;
+  margin-bottom: 0.35rem;
+}
+
+.message-content {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.message-content img,
+.media-item img,
+.media-item video {
+  max-width: 100%;
+  border-radius: 12px;
+  display: block;
+}
+
+.composer {
+  border-top: 1px solid var(--border);
+  padding: 0.9rem 1rem;
+  background: var(--panel);
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+#composer-input {
+  min-width: 0;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 18, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 20;
+}
+
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  width: min(520px, 92vw);
+  padding: 1rem;
+  box-shadow: 0 25px 60px var(--shadow);
+}
+
+.modal-card.wide {
+  width: min(760px, 92vw);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.profile-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.profile-grid label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  max-height: 55vh;
+  overflow: auto;
+}
+
+.media-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.02);
+}
+
+.media-item img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+}
+
+.media-item button {
+  width: 100%;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+@media (max-width: 900px) {
+  .screen {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .composer {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .composer input {
+    grid-column: 1 / -1;
+  }
+}
